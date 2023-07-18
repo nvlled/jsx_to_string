@@ -1,25 +1,51 @@
-// deno-lint-ignore-file no-empty-interface no-explicit-any
-import {
-  ComponentType,
-  VNode,
-  FunctionComponent,
-  PreactDOMAttributes,
-  ClassAttributes,
-  Defaultize,
-  Booleanish,
-  Component,
-} from "./common.ts";
+// deno-lint-ignore-file no-empty-interface no-explicit-any ban-types
+
+type Booleanish = boolean | "true" | "false";
+
+interface VNode<P = {}> {
+  type: ComponentType<P> | string;
+  props: P & { children: ComponentChildren };
+}
+
+type ComponentChild =
+  | VNode<any>
+  | object
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined;
+
+export type ComponentChildren = ComponentChild[] | ComponentChild;
+
+interface Attributes {
+  jsx?: boolean | undefined;
+}
+type RenderableProps<P> = P &
+  Readonly<Attributes & { children?: ComponentChildren }>;
+
+interface FunctionComponent<P = {}> {
+  (props: RenderableProps<P>, context?: any): VNode<any> | null;
+  displayName?: string;
+  defaultProps?: Partial<P> | undefined;
+}
+
+type ComponentType<P = {}> = FunctionComponent<P>;
 
 declare global {
-  // Based on preact JSXInternal, but
+  // Ripped from preact JSXInternal, but
   // anything related to svg and events are removed,
   // which reduces the size to about 1/3 of original.
   namespace JSX {
-    export type LibraryManagedAttributes<Component, Props> = Component extends {
-      defaultProps: infer Defaults;
+    interface ClassAttributes<T> extends Attributes {}
+
+    interface PreactDOMAttributes {
+      children?: ComponentChildren;
+      dangerouslySetInnerHTML?: {
+        __html: string;
+      };
     }
-      ? Defaultize<Props, Defaults>
-      : Props;
 
     export interface IntrinsicAttributes {
       key?: any;
@@ -33,7 +59,7 @@ declare global {
         }[keyof IntrinsicElements]
       | ComponentType<P>;
     export interface Element extends VNode<any> {}
-    export type ElementClass = Component<any, any> | FunctionComponent<any>;
+    export type ElementClass = FunctionComponent<any>;
 
     export interface ElementAttributesProperty {
       props: any;
@@ -70,7 +96,7 @@ declare global {
 
     export type UnpackSignal<T> = T extends SignalLike<infer V> ? V : T;
 
-    export interface DOMAttributes<Target> extends PreactDOMAttributes {}
+    export interface DOMAttributes extends PreactDOMAttributes {}
 
     // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
     export interface AriaAttributes {
@@ -393,7 +419,7 @@ declare global {
 
     export interface HTMLAttributes<RefType extends EventTarget = EventTarget>
       extends ClassAttributes<RefType>,
-        DOMAttributes<RefType>,
+        DOMAttributes,
         AriaAttributes {
       // Standard HTML Attributes
       accept?: string | undefined | SignalLike<string | undefined>;
@@ -711,59 +737,6 @@ declare global {
       RefType extends EventTarget = EventTarget
     > = HA;
 
-    export interface HTMLMarqueeElement extends HTMLElement {
-      behavior?:
-        | "scroll"
-        | "slide"
-        | "alternate"
-        | undefined
-        | SignalLike<"scroll" | "slide" | "alternate" | undefined>;
-      bgColor?: string | undefined | SignalLike<string | undefined>;
-      direction?:
-        | "left"
-        | "right"
-        | "up"
-        | "down"
-        | undefined
-        | SignalLike<"left" | "right" | "up" | "down" | undefined>;
-      height?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      hspace?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      loop?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      scrollAmount?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      scrollDelay?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      trueSpeed?: boolean | undefined | SignalLike<boolean | undefined>;
-      vspace?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-      width?:
-        | number
-        | string
-        | undefined
-        | SignalLike<number | string | undefined>;
-    }
-
     export interface IntrinsicElements {
       // HTML
       a: HTMLAttributes<HTMLAnchorElement>;
@@ -885,39 +858,6 @@ declare global {
   }
 }
 
-type litaral = string | number;
-type NodeSet =
-  | Node
-  | litaral
-  | null
-  | false
-  | (Node | litaral | null | false)[];
-
-//export interface Component<P = unknown> {
-//  (props: P): NodeSet | Promise<NodeSet>;
-//}
-
-interface Children {
-  children?: (Node | litaral | null | false)[];
-}
-
-export interface Node<P = any> {
-  type: Component<P> | string;
-  props: P & Children;
-}
-
-export function h(
-  type: Component | string,
-  props?: { [prop: string]: unknown },
-  ...children: (Node | litaral | null | false)[]
-): JSX.Element {
-  return { type, props: { ...props, children } };
-}
-
-export function Fragment({ children }: Children) {
-  return children;
-}
-
 function escapeHTML(text: string): string {
   const entities: { [char: string]: string } = {
     "<": "&lt;",
@@ -931,77 +871,156 @@ function escapeHTML(text: string): string {
   });
 }
 
-async function renderNodeSetToString(nodes: NodeSet): Promise<string> {
+const styleObjToCss = (() => {
+  const IS_NON_DIMENSIONAL = new Set([
+    "animation-iteration-count",
+    "border-image-outset",
+    "border-image-slice",
+    "border-image-width",
+    "box-flex",
+    "box-flex-group",
+    "box-ordinal-group",
+    "column-count",
+    "fill-opacity",
+    "flex",
+    "flex-grow",
+    "flex-negative",
+    "flex-order",
+    "flex-positive",
+    "flex-shrink",
+    "flood-opacity",
+    "font-weight",
+    "grid-column",
+    "grid-row",
+    "line-clamp",
+    "line-height",
+    "opacity",
+    "order",
+    "orphans",
+    "stop-opacity",
+    "stroke-dasharray",
+    "stroke-dashoffset",
+    "stroke-miterlimit",
+    "stroke-opacity",
+    "stroke-width",
+    "tab-size",
+    "widows",
+    "z-index",
+    "zoom",
+  ]);
+
+  const JS_TO_CSS: Record<string, string> = {};
+  const CSS_REGEX = /[A-Z]/g;
+
+  return function (s: object) {
+    let str = "";
+    for (const prop of Object.keys(s)) {
+      const val = (s as any)[prop];
+      if (val != null && val !== "") {
+        const name =
+          prop[0] == "-"
+            ? prop
+            : JS_TO_CSS[prop] ||
+              (JS_TO_CSS[prop] = prop.replace(CSS_REGEX, "-$&").toLowerCase());
+
+        let suffix = ";";
+        if (
+          typeof val === "number" &&
+          // Exclude custom-attributes
+          !name.startsWith("--") &&
+          !IS_NON_DIMENSIONAL.has(name)
+        ) {
+          suffix = "px;";
+        }
+        str = str + name + ":" + val + suffix;
+      }
+    }
+    return str || undefined;
+  };
+})();
+
+export function h(
+  type: ComponentType,
+  props?: { [prop: string]: unknown },
+  ...children: ComponentChildren[]
+): JSX.Element {
+  return { type, props: { ...props, children } };
+}
+
+export function Fragment({ children }: { children?: ComponentChildren[] }) {
+  return children;
+}
+
+function renderNodeSetToString(nodes: ComponentChildren): string {
   if (nodes == null || nodes === false) {
     return "";
   } else if (typeof nodes !== "object") {
     return escapeHTML(`${nodes}`);
   } else if (Array.isArray(nodes)) {
-    return (
-      await Promise.all(
-        nodes.map(
-          (child: NodeSet): Promise<string> => renderNodeSetToString(child)
-        )
-      )
-    ).join("");
+    return nodes
+      .map((child: ComponentChildren): string => renderNodeSetToString(child))
+      .join("");
   } else {
-    return await renderToString(nodes);
+    return toString(nodes as JSX.Element);
   }
 }
 
-/**
- * Renders a given JSX node to a string.
- */
-export async function renderToString(jsx: Node): Promise<string> {
+export function toString(jsx: JSX.Element): string {
   if (typeof jsx.type === "function") {
-    return await renderNodeSetToString(await jsx.type(jsx.props));
+    return renderNodeSetToString(jsx.type(jsx.props));
+  }
+
+  // render props
+  const props = Object.entries(jsx.props)
+    .map(([prop, value]: [string, unknown]): string => {
+      switch (prop) {
+        case "dangerouslySetInnerHTML":
+        case "children":
+          return "";
+        case "className":
+          return ` class=${value}`;
+        case "style":
+          if (value && typeof value === "object")
+            return ` ${prop}="${styleObjToCss(value)}"`;
+        /* falls through */
+        default:
+          return ` ${prop}="${""
+            .concat(value as string)
+            .replace(/\"/g, '\\"')}"`;
+      }
+    })
+    .join("");
+
+  // render inner HTML
+  const children = jsx.props?.children ?? [];
+  let innerHTML = "";
+  if (jsx.props.dangerouslySetInnerHTML != null) {
+    innerHTML = jsx.props.dangerouslySetInnerHTML?.__html ?? "";
   } else {
-    // render props
-    const props = Object.entries(jsx.props)
-      .map(([prop, value]: [string, unknown]): string => {
-        switch (prop) {
-          case "dangerouslySetInnerHTML":
-          case "children":
-            return "";
-          default:
-            return ` ${prop}="${""
-              .concat(value as string)
-              .replace(/\"/g, '\\"')}"`;
-        }
-      })
-      .join("");
+    innerHTML = renderNodeSetToString(children);
+  }
 
-    // render inner HTML
-    const children = jsx.props?.children ?? [];
-    let innerHTML = "";
-    if (jsx.props.dangerouslySetInnerHTML != null) {
-      innerHTML = jsx.props.dangerouslySetInnerHTML?.__html ?? "";
-    } else {
-      innerHTML = await renderNodeSetToString(children);
-    }
-
-    // render HTML tag
-    switch (jsx.type) {
-      case "area":
-      case "base":
-      case "basefont":
-      case "br":
-      case "col":
-      case "embed":
-      case "hr":
-      case "img":
-      case "input":
-      case "keygen":
-      case "link":
-      case "meta":
-      case "param":
-      case "source":
-      case "spacer":
-      case "track":
-      case "wbr":
-        return `<${jsx.type}${props} />`;
-      default:
-        return `<${jsx.type}${props}>${innerHTML}</${jsx.type}>`;
-    }
+  // render HTML tag
+  switch (jsx.type) {
+    case "area":
+    case "base":
+    case "basefont":
+    case "br":
+    case "col":
+    case "embed":
+    case "hr":
+    case "img":
+    case "input":
+    case "keygen":
+    case "link":
+    case "meta":
+    case "param":
+    case "source":
+    case "spacer":
+    case "track":
+    case "wbr":
+      return `<${jsx.type}${props} />`;
+    default:
+      return `<${jsx.type}${props}>${innerHTML}</${jsx.type}>`;
   }
 }
