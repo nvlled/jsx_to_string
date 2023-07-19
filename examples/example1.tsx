@@ -1,4 +1,8 @@
-import { h, toString, ComponentChildren } from "../mod.ts";
+import {
+  h,
+  toString,
+  ComponentChildren,
+} from "https://deno.land/x/jsx_to_string/mod.ts";
 
 function Layout({
   title,
