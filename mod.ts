@@ -978,7 +978,7 @@ export function toString(jsx: JSX.Element): string {
         case "children":
           return "";
         case "className":
-          return ` class=${value}`;
+          return ` class="${value}"`;
         case "style":
           if (value && typeof value === "object")
             return ` ${prop}="${styleObjToCss(value)}"`;

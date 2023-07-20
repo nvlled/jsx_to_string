@@ -1,8 +1,4 @@
-import {
-  h,
-  toString,
-  ComponentChildren,
-} from "https://deno.land/x/jsx_to_string/mod.ts";
+import { h, toString, ComponentChildren } from "../mod.ts";
 
 function Layout({
   title,
@@ -18,7 +14,7 @@ function Layout({
         <link rel="stylesheet" href="assets/style.css" />
       </head>
       <body>
-        <div className="contents">
+        <div className="contents x y">
           <h1
             style={{
               color: "tomato",
