@@ -1,6 +1,6 @@
 # jsx_to_string
 
-A typescript library for rendering tsx or jsx into plain HTML string.
+A typescript library for rendering TSX or JSX into plain HTML string.
 This library is intended only for things like static site generators (SSG),
 it's _not_ intended things like server-side rendering (SSR) of
 React components.
@@ -85,7 +85,7 @@ This library is based of these two fine libraries:
 - https://github.com/preactjs/preact
 - https://github.com/dyedgreen/deno-jsx
 
-Much of the code is for the type defintions for the
+Most of the code comes from the type defintions for the
 jsx elements, which is taken from preact. I used deno-jsx
 as the base implementation, but I've made a lot of changes
 so it's not really much of a fork suitable for merging back.
