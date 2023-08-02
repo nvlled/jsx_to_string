@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="es2021" />
 // deno-lint-ignore-file no-empty-interface no-explicit-any ban-types
 
 interface VNode<P = {}> {
@@ -15,7 +17,7 @@ type ComponentChild =
   | null
   | undefined;
 
-export type ComponentChildren = ComponentChild[] | ComponentChild;
+type ComponentChildren = ComponentChild[] | ComponentChild;
 
 interface Attributes {
   jsx?: boolean | undefined;

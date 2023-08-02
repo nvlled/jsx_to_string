@@ -1,9 +1,5 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "es2021"
-    ],
     "jsx": "react",
     "jsxFactory": "h",
     "jsxFragmentFactory": "Fragment"
