@@ -1,11 +1,11 @@
-import { h, toString, ComponentChildren } from "../mod.ts";
+import { h, toString } from "../mod.ts";
 
 function Layout({
   title,
   children,
 }: {
   title: string;
-  children: ComponentChildren;
+  children: JSX.Children;
 }) {
   return (
     <html>
@@ -32,9 +32,7 @@ function Layout({
 }
 
 const homePage = (
-  <Layout title={"Home"}>
-    <p>This is an example page.</p>
-  </Layout>
+  <Layout title={"Home"}>{[<p>This is an example page.</p>]}</Layout>
 );
 
 console.log(toString(homePage));

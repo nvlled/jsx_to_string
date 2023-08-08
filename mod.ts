@@ -60,6 +60,8 @@ declare global {
         }[keyof IntrinsicElements]
       | ComponentType<P>;
     export interface Element extends VNode<any> {}
+    export type Children = ComponentChildren;
+
     export type ElementClass = FunctionComponent<any>;
 
     export interface ElementAttributesProperty {
