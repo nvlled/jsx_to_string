@@ -850,6 +850,41 @@ export function Fragment({ children }: { children?: ComponentChildren[] }) {
   return children;
 }
 
+function walkNodeSet(
+  nodes: ComponentChildren,
+  fn: (elem: JSX.Element) => void
+) {
+  if (nodes == null || nodes === false) {
+    return;
+  }
+
+  if (typeof nodes === "function") {
+    walkNodeSet(nodes(), fn);
+  } else if (Array.isArray(nodes)) {
+    for (const elem of nodes) {
+      walkNodeSet(elem, fn);
+    }
+  } else if (typeof nodes === "object") {
+    walkTree(nodes as JSX.Element, fn);
+  }
+}
+
+/**
+ * walkTree iterates over all the nodes in the tree.
+ * It can be used to find and read node data, or
+ * it can be used to modify the nodes.
+ */
+export function walkTree(jsx: JSX.Element, fn: (elem: JSX.Element) => void) {
+  if (typeof jsx.type === "function") {
+    return walkNodeSet(jsx.type(jsx.props), fn);
+  }
+  fn(jsx);
+
+  if (jsx.props.dangerouslySetInnerHTML == null) {
+    walkNodeSet(jsx.props.children, fn);
+  }
+}
+
 /**
  * DeferredComponent is a functionn that returns JSX.Element.
  * It is used to delay rendering a node, for cases like
