@@ -22,7 +22,7 @@ function Layout({
               textAlign: "center",
             }}
           >
-            Example
+            {() => <span>Example</span>}
           </h1>
           {children}
         </div>

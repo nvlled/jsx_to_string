@@ -17,7 +17,10 @@ type ComponentChild =
   | null
   | undefined;
 
-type ComponentChildren = ComponentChild[] | ComponentChild;
+type ComponentChildren =
+  | ComponentChild[]
+  | ComponentChild
+  | (() => ComponentChild);
 
 interface Attributes {
   jsx?: boolean | undefined;
@@ -848,6 +851,10 @@ export function Fragment({ children }: { children?: ComponentChildren[] }) {
 }
 
 function renderNodeSetToString(nodes: ComponentChildren): string {
+  if (typeof nodes === "function") {
+    nodes = nodes();
+  }
+
   if (nodes == null || nodes === false) {
     return "";
   } else if (typeof nodes !== "object") {
