@@ -14,7 +14,7 @@ function Layout({
         <link rel="stylesheet" href="assets/style.css" />
       </head>
       <body>
-        <div className="contents x y">
+        <div className="contents x y" style={{ border: "1px solid green" }}>
           <h1
             style={{
               color: "tomato",
@@ -22,9 +22,15 @@ function Layout({
               textAlign: "center",
             }}
           >
-            {() => <span>Example</span>}
+            Example
           </h1>
           {children}
+          {() => (
+            <div>
+              This is a deferred component, it will be rendered after all the
+              other non-deferred elements are rendered to string.
+            </div>
+          )}
         </div>
       </body>
     </html>

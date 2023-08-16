@@ -850,27 +850,36 @@ export function Fragment({ children }: { children?: ComponentChildren[] }) {
   return children;
 }
 
-function renderNodeSetToString(nodes: ComponentChildren): string {
+/**
+ * DeferredComponent is a functionn that returns JSX.Element.
+ * It is used to delay rendering a node, for cases like
+ * collecting styles into the <head>
+ */
+export type DeferredComponent = () => ComponentChild;
+
+type RenderResult = string | DeferredComponent;
+
+function renderNodeSet(nodes: ComponentChildren): RenderResult[] {
   if (typeof nodes === "function") {
-    nodes = nodes();
+    return [nodes as () => ComponentChild];
   }
 
   if (nodes == null || nodes === false) {
-    return "";
+    return [];
   } else if (typeof nodes !== "object") {
-    return escapeHTML(`${nodes}`);
+    return [escapeHTML(`${nodes}`)];
   } else if (Array.isArray(nodes)) {
-    return nodes
-      .map((child: ComponentChildren): string => renderNodeSetToString(child))
-      .join("");
+    return nodes.flatMap((child: ComponentChildren): RenderResult[] =>
+      renderNodeSet(child)
+    );
   } else {
-    return toString(nodes as JSX.Element);
+    return renderNode(nodes as JSX.Element);
   }
 }
 
-export function toString(jsx: JSX.Element): string {
+function renderNode(jsx: JSX.Element): RenderResult[] {
   if (typeof jsx.type === "function") {
-    return renderNodeSetToString(jsx.type(jsx.props));
+    return renderNodeSet(jsx.type(jsx.props));
   }
 
   // render props
@@ -896,11 +905,11 @@ export function toString(jsx: JSX.Element): string {
 
   // render inner HTML
   const children = jsx.props?.children ?? [];
-  let innerHTML = "";
+  let innerHTML: RenderResult[] = [];
   if (jsx.props.dangerouslySetInnerHTML != null) {
-    innerHTML = jsx.props.dangerouslySetInnerHTML?.__html ?? "";
+    innerHTML = [jsx.props.dangerouslySetInnerHTML?.__html ?? ""];
   } else {
-    innerHTML = renderNodeSetToString(children);
+    innerHTML = renderNodeSet(children);
   }
 
   // render HTML tag
@@ -922,8 +931,23 @@ export function toString(jsx: JSX.Element): string {
     case "spacer":
     case "track":
     case "wbr":
-      return `<${jsx.type}${props} />`;
+      return [`<${jsx.type}${props} />`];
     default:
-      return `<${jsx.type}${props}>${innerHTML}</${jsx.type}>`;
+      return [`<${jsx.type}${props}>`, ...innerHTML, `</${jsx.type}>`];
   }
+}
+
+export function toString(jsx: JSX.Element) {
+  const items = renderNode(jsx);
+  const result: RenderResult[] = [];
+  for (const e of items) {
+    if (typeof e === "string") {
+      result.push(e);
+    } else {
+      const f = renderNodeSet(e());
+      result.push(...f);
+    }
+  }
+
+  return result.join("");
 }
